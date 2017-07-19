@@ -1001,6 +1001,13 @@ class TaskInstanceTest(unittest.TestCase):
         ['all_success', 2, 0, 1, 0, 0, True, ST.UPSTREAM_FAILED, False],
         ['all_success', 2, 1, 0, 0, 0, True, ST.SKIPPED, False],
         #
+        # Tests for all_success_or_skipped
+        #
+        ['all_success_or_skipped', 5, 0, 0, 0, 0, True, None, True],
+        ['all_success_or_skipped', 2, 0, 0, 0, 0, True, None, False],
+        ['all_success_or_skipped', 2, 0, 1, 0, 0, True, ST.UPSTREAM_FAILED, False],
+        ['all_success_or_skipped', 2, 1, 0, 0, 0, True, ST.SKIPPED, False],
+        #
         # Tests for one_success
         #
         ['one_success', 5, 0, 0, 0, 5, True, None, True],
@@ -1035,6 +1042,10 @@ class TaskInstanceTest(unittest.TestCase):
                                      failed, upstream_failed, done,
                                      flag_upstream_failed,
                                      expect_state, expect_completed):
+        """
+        In this test scenario five upstream tasks are created that
+        all point to a single downstream task
+        """
         start_date = datetime.datetime(2016, 2, 1, 0, 0, 0)
         dag = models.DAG('test-dag', start_date=start_date)
         downstream = DummyOperator(task_id='downstream',

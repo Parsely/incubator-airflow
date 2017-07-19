@@ -19,6 +19,7 @@ from builtins import object
 
 class TriggerRule(object):
     ALL_SUCCESS = 'all_success'
+    ALL_SUCCESS_OR_SKIPPED = 'all_success_or_skipped'
     ALL_FAILED = 'all_failed'
     ALL_DONE = 'all_done'
     ONE_SUCCESS = 'one_success'

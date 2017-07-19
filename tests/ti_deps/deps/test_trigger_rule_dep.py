@@ -158,6 +158,38 @@ class TriggerRuleDepTest(unittest.TestCase):
         self.assertEqual(len(dep_statuses), 1)
         self.assertFalse(dep_statuses[0].passed)
 
+    def test_all_success_or_skipped_success(self):
+        ti = self._get_task_instance(TriggerRule.ALL_SUCCESS_OR_SKIPPED,
+                                     upstream_task_ids=["FakeTaskID",
+                                                        "OtherFakeTaskID"])
+        dep_statuses = tuple(TriggerRuleDep()._evaluate_trigger_rule(
+            ti=ti,
+            successes=1,
+            skipped=1,
+            failed=0,
+            upstream_failed=0,
+            done=1,
+            flag_upstream_failed=False,
+            session="Fake Session"))
+        self.assertEqual(len(dep_statuses), 0)
+
+    def test_all_success_or_skipped_failure(self):
+        ti = self._get_task_instance(TriggerRule.ALL_SUCCESS_OR_SKIPPED,
+                                     upstream_task_ids=["FakeTaskID",
+                                                        "OtherFakeTaskID",
+                                                        "YetAnotherFakeTaskId"])
+        dep_statuses = tuple(TriggerRuleDep()._evaluate_trigger_rule(
+            ti=ti,
+            successes=1,
+            skipped=1,
+            failed=1,
+            upstream_failed=0,
+            done=2,
+            flag_upstream_failed=False,
+            session="Fake Session"))
+        self.assertEqual(len(dep_statuses), 1)
+        self.assertFalse(dep_statuses[0].passed)
+
     def test_all_failed_tr_success(self):
         """
         All-failed trigger rule success

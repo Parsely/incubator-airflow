@@ -583,6 +583,7 @@ on direct parent tasks and are values that can be passed to any operator
 while creating tasks:
 
 * ``all_success``: (default) all parents have succeeded
+* ``all_success_or_skipped``: all parents have either succeeded or been skipped
 * ``all_failed``: all parents are in a ``failed`` or ``upstream_failed`` state
 * ``all_done``: all parents are done with their execution
 * ``one_failed``: fires as soon as at least one parent has failed, it does not wait for all parents to be done
@@ -610,12 +611,12 @@ itself, if the time right now is not between its ``execution_time`` and the
 next scheduled ``execution_time``.
 
 One must be aware of the interaction between skipped tasks and trigger
-rules. Skipped tasks will cascade through trigger rules ``all_success``
-and ``all_failed`` but not ``all_done``, ``one_failed``, ``one_success``,
-and ``dummy``. If you would like to use the ``LatestOnlyOperator`` with
-trigger rules that do not cascade skips, you will need to ensure that the
-``LatestOnlyOperator`` is **directly** upstream of the task you would like
-to skip.
+rules. Skipped tasks will cascade through trigger rules ``all_success``,
+``all_success_or_skipped``, and ``all_failed`` but not ``all_done``,
+``one_failed``, ``one_success``, and ``dummy``. If you would like to use
+the ``LatestOnlyOperator`` with trigger rules that do not cascade skips,
+you will need to ensure that the ``LatestOnlyOperator`` is **directly**
+upstream of the task you would like to skip.
 
 It is possible, through use of trigger rules to mix tasks that should run
 in the typical date/time dependent mode and those using the
@@ -643,11 +644,13 @@ For example, consider the following dag:
   latest_only = LatestOnlyOperator(task_id='latest_only', dag=dag)
 
   task1 = DummyOperator(task_id='task1', dag=dag)
-  task1.set_upstream(latest_only)
+  task1.set_upstream(latest_only,
+                     trigger_rule=TriggerRule.ALL_SUCCESS_OR_SKIPPED)
 
   task2 = DummyOperator(task_id='task2', dag=dag)
 
-  task3 = DummyOperator(task_id='task3', dag=dag)
+  task3 = DummyOperator(task_id='task3', dag=dag,
+                        trigger_rule=TriggerRule.ALL_SUCCESS_OR_SKIPPED)
   task3.set_upstream([task1, task2])
 
   task4 = DummyOperator(task_id='task4', dag=dag,
@@ -659,7 +662,7 @@ for all runs except the latest run. ``task1`` is directly downstream of
 ``latest_only`` and will also skip for all runs except the latest.
 ``task2`` is entirely independent of ``latest_only`` and will run in all
 scheduled periods. ``task3`` is downstream of ``task1`` and ``task2`` and
-because of the default ``trigger_rule`` being ``all_success`` will receive
+because its ``trigger_rule`` is ``all_success_or_skipped`` will receive
 a cascaded skip from ``task1``. ``task4`` is downstream of ``task1`` and
 ``task2`` but since its ``trigger_rule`` is set to ``all_done`` it will
 trigger as soon as ``task1`` has been skipped (a valid completion state)
