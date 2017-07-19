@@ -4254,16 +4254,6 @@ class DagRun(Base):
             session=session
         )
         none_depends_on_past = all(not t.task.depends_on_past for t in unfinished_tasks)
-        # small speed up
-        if unfinished_tasks and none_depends_on_past:
-            # todo: this can actually get pretty slow: one task costs between 0.01-015s
-            no_dependencies_met = all(
-                # Use a special dependency context that ignores task's up for retry
-                # dependency, since a task that is up for retry is not necessarily
-                # deadlocked.
-                not t.are_dependencies_met(dep_context=self.DEADLOCK_CHECK_DEP_CONTEXT,
-                                           session=session)
-                for t in unfinished_tasks)
 
         duration = (datetime.now() - start_dttm).total_seconds() * 1000
         Stats.timing("dagrun.dependency-check.{}.{}".
@@ -4287,10 +4277,21 @@ class DagRun(Base):
                 self.state = State.SUCCESS
 
             # if *all tasks* are deadlocked, the run failed
-            elif unfinished_tasks and none_depends_on_past and no_dependencies_met:
-                logging.info(
-                    'Deadlock; marking run {} failed'.format(self))
-                self.state = State.FAILED
+            elif unfinished_tasks and none_depends_on_past:
+
+                # todo: this can actually get pretty slow: one task costs between 0.01-015s
+                # Use a special dependency context that ignores task's up for retry
+                # dependency, since a task that is up for retry is not necessarily
+                # deadlocked.
+                any_dependencies_met = False
+                for t in unfinished_tasks:
+                    if t.are_dependencies_met(dep_context=self.DEADLOCK_CHECK_DEP_CONTEXT,
+                                              session=session):
+                        any_dependencies_met = True
+                        break
+                if not(any_dependencies_met):
+                    logging.info('Deadlock; marking run {} failed'.format(self))
+                    self.state = State.FAILED
 
             # finally, if the roots aren't done, the dag is still running
             else:

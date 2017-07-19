@@ -112,7 +112,7 @@ class TriggerRuleDep(BaseTIDep):
             the upstream_failed state creation while checking to see
             whether the task instance is runnable. It was the shortest
             path to add the feature
-        :type flag_upstream_failed: integer
+        :type flag_upstream_failed: boolean
         :param session: database session
         :type session: Session
         """
